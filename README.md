@@ -1,19 +1,31 @@
-Photography Business Database — EER & Sample Data
+# Photography Business Database — EER & Sample Data
 
-**Files included**
+**Files included**  
+- `EER/EER_Diagram_Photography.png`: Enhanced ER diagram with entities, PK/FK labels, and cardinalities.  
+- `data/Sample_Data_Photography.xlsx`: 8 sheets with ~40 rows each (synthetic, realistic values).  
+- `docs/Normalization_Report.pdf`: Documentation of normalization to 3NF with analysis and scenarios.  
+- `docs/README_with_Queries.pdf`: polished PDF version of this README (optional).  
+- `sql/example_queries.sql`: example SQL queries demonstrating common lookups.
 
-EER_Diagram_Photography.png: Enhanced ER diagram with entities, PK/FK labels, and cardinalities.
+## Design Summary
+This database models a small photography studio’s core operations. The main entities are Clients, Packages, Locations, Staff, Bookings, Invoices, Deliveries, and the junction BookingStaff. Bookings references one client, one package, and one location (all 1:M). Invoices are modeled 1:1 with bookings via a unique foreign key to simplify “one bill per booking.” Deliveries are 1:M from bookings, allowing multiple deliverables (proofs, finals, prints). Staff participate in many bookings and each booking can include many staff, captured by BookingStaff with a composite PK (booking_id, staff_id) and role. Key constraints include non-null FKs on Bookings, invoice totals (amount + tax), and end_datetime > start_datetime.
 
-Sample_Data_Photography.xlsx: 8 sheets with ~40 rows each (synthetic, realistic values).
+The database has been normalized through 1NF, 2NF, and 3NF. Each attribute depends only on its PK, partial dependencies were removed, and no transitive dependencies remain. This ensures data integrity and efficient querying. Sample data (~40 rows/table) provides realistic 2024–2025 values to support testing, reporting, and normalization.
 
-README.md: detailed design explanation.
+---
 
-**Design Summary**
+## Example SQL Queries
 
-This database is designed to support the operations of a small photography studio by organizing client information, bookings, payments, staff assignments, and deliverables. The core entities are Clients, Packages, Locations, Staff, Bookings, Invoices, PhotoDeliveries, and a junction table BookingStaff to model many-to-many staff participation. Each entity has a clearly defined primary key and relevant attributes such as contact details, pricing, session details, and delivery formats.
-
-The Bookings table serves as the central hub, connecting to clients, packages, and locations (1:M relationships). Each booking generates exactly one Invoice (1:1) with amount and tax calculations, ensuring accurate billing. PhotoDeliveries link back to bookings in a 1:M relationship, capturing different types of outputs like proofs, edited images, or printed albums. The BookingStaff junction table manages many-to-many scheduling between staff and bookings, with a composite key (booking_id, staff_id) and a role attribute to record responsibilities.
-
-Constraints ensure logical consistency: bookings must reference valid clients, packages, and locations; staff assignments require non-null roles; invoice totals must be non-negative; and booking times enforce end > start. These constraints help maintain data quality and integrity.
-
-Sample data (≈40 rows per table) provides realistic values such as session dates from 2024–2025, multiple payment methods, varied package pricing, and delivery links. This enables meaningful testing, reporting, and validation of normalization. Overall, the design balances flexibility and structure to support real-world studio operations.
+### Query 1: Staff members and their roles for wedding sessions
+```sql
+SELECT 
+    b.booking_id,
+    s.staff_id,
+    s.first_name,
+    s.last_name,
+    bs.role
+FROM Bookings b
+JOIN BookingStaff bs ON b.booking_id = bs.booking_id
+JOIN Staff s ON bs.staff_id = s.staff_id
+JOIN Packages p ON b.package_id = p.package_id
+WHERE p.package_type = 'Wedding';
